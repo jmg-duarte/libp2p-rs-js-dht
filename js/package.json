@@ -23,9 +23,13 @@
     "@libp2p/interfaces": "^3.3.2",
     "@libp2p/kad-dht": "^14.2.15",
     "@libp2p/peer-id": "^5.1.0",
+    "@libp2p/peer-store": "^11.1.2",
+    "@libp2p/ping": "^2.0.27",
     "@libp2p/websockets": "^9.2.8",
     "@multiformats/multiaddr": "^12.4.0",
+    "datastore-core": "^10.0.2",
     "it-all": "^3.0.7",
+    "it-last": "^3.0.7",
     "libp2p": "^2.8.2"
   }
 }

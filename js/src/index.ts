@@ -1,59 +1,55 @@
 import { noise } from "@chainsafe/libp2p-noise"
 import { yamux } from "@chainsafe/libp2p-yamux"
 import { bootstrap } from "@libp2p/bootstrap"
-import { identify } from "@libp2p/identify"
+import { identify, identifyPush } from "@libp2p/identify"
 import { kadDHT } from "@libp2p/kad-dht"
 import { peerIdFromString } from "@libp2p/peer-id"
 import { webSockets } from "@libp2p/websockets"
 import { createLibp2p } from "libp2p"
-import all from "it-all"
-import { multiaddr } from "@multiformats/multiaddr"
 
-async function createNode(bootnode: string) {
+
+async function createNode(bootnodes: string[]) {
     return await createLibp2p(
         {
+            addresses: {
+                listen: [
+                    "/ip4/0.0.0.0/tcp/0/ws"
+                ]
+            },
+            transports: [webSockets()],
             connectionEncrypters: [noise()],
             streamMuxers: [yamux()],
-            transports: [webSockets()],
             peerDiscovery: [
                 bootstrap({
-                    list: [bootnode]
-                })
+                    list: bootnodes,
+                }),
             ],
             services: {
                 identify: identify(),
+                identifyPush: identifyPush(),
                 dht: kadDHT({
-                    clientMode: true
+                    clientMode: true,
                 })
             },
             connectionMonitor: {
-                "enabled": false
-            }
-        }
+                enabled: false
+            },
+        },
     )
 }
 
 async function main() {
-    const [_node, _script, bootnode, query] = process.argv
-    if (!bootnode) {
-        throw new Error("Missing \"bootnode\"")
+    const [_node, _script, bootnodes, query] = process.argv
+    if (!bootnodes) {
+        throw new Error("Missing \"bootnodes\"")
     }
     if (!query) {
         throw new Error("Missing \"query\"")
     }
 
-    console.log(multiaddr(bootnode));
-
-    const node = await createNode(bootnode)
-    console.log("local peer id", node.peerId)
-
+    const node = await createNode(bootnodes.split(","))
     const peerId = peerIdFromString(query)
-    const peerIdQuery = peerId.toMultihash().bytes
-
-    const queryResult = node.services.dht.get(peerIdQuery)
-    const consumedResult = await all(queryResult)
-
-    console.log(consumedResult)
+    console.log(await node.contentRouting.get(peerId.toMultihash().bytes))
 }
 
 main()

@@ -7,13 +7,13 @@ use libp2p::{
     identify,
     identity::{self, Keypair},
     kad::{self, InboundRequest, QueryResult, Record},
-    noise,
+    noise, ping,
     swarm::{self, NetworkBehaviour, SwarmEvent},
     tcp, websocket, yamux, Multiaddr, Swarm, Transport,
 };
 use lp2p::extract_peer_id;
 use tracing::level_filters::LevelFilter;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 
 #[derive(Clone, Debug, clap::Parser)]
 struct App {
@@ -27,7 +27,13 @@ struct App {
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::DEBUG))
+        .with(tracing_subscriber::fmt::layer())
+        .with(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::DEBUG.into())
+                .from_env()
+                .unwrap(),
+        )
         .init();
 
     let app = App::parse();
@@ -56,6 +62,7 @@ impl Behaviour {
             "/polka-test/identify/1.0.0".to_string(),
             keypair.public(),
         ));
+
         let local_peer_id = keypair.public().to_peer_id();
         let mut kad =
             kad::Behaviour::new(local_peer_id, kad::store::MemoryStore::new(local_peer_id));
@@ -122,6 +129,11 @@ fn on_behaviour_event(swarm: &mut Swarm<Behaviour>, event: BehaviourEvent) {
                 identify::Event::Received { peer_id, info, .. } => {
                     tracing::info!("Received identify event with info: {info:?}");
 
+                    if info.listen_addrs.is_empty() {
+                        tracing::warn!("No listen addresses for peer {}, skipping...", peer_id);
+                        return;
+                    }
+
                     let is_kad_capable = info
                         .protocols
                         .iter()
@@ -134,20 +146,18 @@ fn on_behaviour_event(swarm: &mut Swarm<Behaviour>, event: BehaviourEvent) {
                         }
                     } else {
                         tracing::warn!("No {} protocol found, skipping...", kad::PROTOCOL_NAME);
+                        return;
                     }
 
-                    // The following code puts the record in the DHT
-                    // without it, there's no way to query for a node's multiaddresses!
-
-                    // tracing::info!("Putting listen addresses for peer: {}", peer_id);
-                    // let buffer: Vec<u8> = vec![];
-                    // let bytes = cbor4ii::serde::to_vec(buffer, &info.listen_addrs).unwrap();
-                    // let record = Record::new(peer_id.to_bytes(), bytes);
-                    // swarm
-                    //     .behaviour_mut()
-                    //     .kad
-                    //     .put_record(record, kad::Quorum::One)
-                    //     .unwrap();
+                    tracing::info!("Putting listen addresses for peer: {}", peer_id);
+                    let buffer: Vec<u8> = vec![];
+                    let bytes = cbor4ii::serde::to_vec(buffer, &info.listen_addrs).unwrap();
+                    let record = Record::new(peer_id.as_ref().to_owned(), bytes);
+                    swarm
+                        .behaviour_mut()
+                        .kad
+                        .put_record(record, kad::Quorum::One)
+                        .unwrap();
                 }
                 _ => tracing::debug!("Received unhandled identify event: {event:?}"),
             };
@@ -157,6 +167,7 @@ fn on_behaviour_event(swarm: &mut Swarm<Behaviour>, event: BehaviourEvent) {
             kad::Event::InboundRequest { request } => on_inbound_request(request),
             _ => tracing::debug!("Received unhandled kadmelia event: {event:?}"),
         },
+        _ => tracing::debug!("Received unhandled behaviour event: {event:?}"),
     }
 }
 

@@ -29,13 +29,25 @@ importers:
       '@libp2p/peer-id':
         specifier: ^5.1.0
         version: 5.1.0
+      '@libp2p/peer-store':
+        specifier: ^11.1.2
+        version: 11.1.2
+      '@libp2p/ping':
+        specifier: ^2.0.27
+        version: 2.0.27
       '@libp2p/websockets':
         specifier: ^9.2.8
         version: 9.2.8
       '@multiformats/multiaddr':
         specifier: ^12.4.0
         version: 12.4.0
+      datastore-core:
+        specifier: ^10.0.2
+        version: 10.0.2
       it-all:
+        specifier: ^3.0.7
+        version: 3.0.7
+      it-last:
         specifier: ^3.0.7
         version: 3.0.7
       libp2p:
@@ -108,6 +120,9 @@ packages:
 
   '@libp2p/peer-store@11.1.2':
     resolution: {integrity: sha512-2egfDs6j+uvreBrzChf5xwNe0kQgYhuaOBx3rVgCAHxuJyXK6/lK+PpEH3Cfgad+if388mII58MU5gzpbawsaw==}
+
+  '@libp2p/ping@2.0.27':
+    resolution: {integrity: sha512-UwkiEJkdKY/4ncwLxMeo1A0DMXMFPTOE39qFovIkEVZI+hLmwMGo9d6kaEVaNL7lyCPFvZmT28RAyK2wOqVZQg==}
 
   '@libp2p/record@4.0.5':
     resolution: {integrity: sha512-HfKugY+ZKizhxE/hbLqI8zcFLfYly2gakaL0k8wBXCfmOTrAV7UajeJWkWqrKkIEMHASUyapm746KF+i9e7Xmw==}
@@ -234,6 +249,9 @@ packages:
 
   it-foreach@2.1.2:
     resolution: {integrity: sha512-PvXs3v1FaeWDhWzRxnwB4vSKJngxdLgi0PddkfurCvIFBmKTBfWONLeyDk5dxrvtCzdE4y96KzEQynk4/bbI5A==}
+
+  it-last@3.0.7:
+    resolution: {integrity: sha512-qG4BTveE6Wzsz5voqaOtZAfZgXTJT+yiaj45vp5S0Vi8oOdgKlRqUeolfvWoMCJ9vwSc/z9pAaNYIza7gA851w==}
 
   it-length-prefixed-stream@1.2.1:
     resolution: {integrity: sha512-FYqlxc2toUoK+aPO5r3KDBIUG1mOvk2DzmjQcsfLUTHRWMJP4Va9855tVzg/22Bj+VUUaT7gxBg7HmbiCxTK4w==}
@@ -587,6 +605,15 @@ snapshots:
       uint8arraylist: 2.4.8
       uint8arrays: 5.1.0
 
+  '@libp2p/ping@2.0.27':
+    dependencies:
+      '@libp2p/crypto': 5.0.15
+      '@libp2p/interface': 2.7.0
+      '@libp2p/interface-internal': 2.3.9
+      '@multiformats/multiaddr': 12.4.0
+      it-byte-stream: 1.1.1
+      uint8arrays: 5.1.0
+
   '@libp2p/record@4.0.5':
     dependencies:
       protons-runtime: 5.5.0
@@ -765,6 +792,8 @@ snapshots:
   it-foreach@2.1.2:
     dependencies:
       it-peekable: 3.0.6
+
+  it-last@3.0.7: {}
 
   it-length-prefixed-stream@1.2.1:
     dependencies:

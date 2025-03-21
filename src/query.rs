@@ -12,6 +12,7 @@ use libp2p::{
     tcp, websocket, yamux, Multiaddr, PeerId, Swarm, Transport,
 };
 use lp2p::extract_peer_id;
+use sha2::{Digest, Sha256};
 use tokio_util::sync::CancellationToken;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
@@ -37,7 +38,7 @@ async fn main() {
 
     tracing::info!("PeerId bytes: {:?}", &app.query.to_bytes());
 
-    let _ = swarm
+    swarm
         .behaviour_mut()
         .kad
         .get_record(RecordKey::new(&app.query.to_bytes()));
