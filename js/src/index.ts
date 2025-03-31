@@ -31,9 +31,6 @@ async function createNode(bootnodes: string[]) {
                     clientMode: true,
                 })
             },
-            connectionMonitor: {
-                enabled: false
-            },
         },
     )
 }

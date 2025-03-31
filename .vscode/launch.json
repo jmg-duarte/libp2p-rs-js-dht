@@ -13,8 +13,9 @@
             "runtimeArgs": [
                 "run",
                 "run",
-                "/ip4/192.168.1.72/tcp/64001/ws/p2p/12D3KooWSZokoinhTgs9CjMC7MYSR4eMJdcPiEcUpBfigQe4voEH",
-                "12D3KooWSG38Tmt1GpM2Nz5Bfg9zD78HSkbP8i5iPPZihghhqmT8"
+                // NOTE: don't forget the replace the PeerId with the right one when debugging
+                "/ip4/192.168.1.72/tcp/60002/ws/p2p/12D3KooWM5cwnLZMa6pKZ2bTayXees9rp57LgVnoPmLK8N7qyVjE",
+                "12D3KooWMJZejrLTfZQCDUsM2PtgHNVY3uKYJxXenRjgWrfTF1tA"
             ],
             "skipFiles": [
                 "<node_internals>/**"

@@ -1,0 +1,15 @@
+FROM rust:1.83 AS build
+
+WORKDIR /usr/src/lp2p
+
+COPY . /usr/src/lp2p/
+
+RUN cargo b -r --bin server
+
+FROM debian:12-slim
+
+WORKDIR /usr/lp2p
+
+COPY --from=build /usr/src/lp2p/target/release/server /usr/lp2p/server
+
+ENTRYPOINT ["/usr/lp2p/server"]

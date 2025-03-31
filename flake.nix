@@ -15,6 +15,6 @@
         rustToolchain = pkgs.pkgsBuildHost.rust-bin.fromRustupToolchainFile
           ./rust-toolchain.toml;
 
-        buildInputs = with pkgs; [ nodejs nodePackages.pnpm rustToolchain ];
+        buildInputs = with pkgs; [ git nodejs nodePackages.pnpm rustToolchain ];
       in with pkgs; { devShells.default = mkShell { inherit buildInputs; }; });
 }

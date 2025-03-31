@@ -12,7 +12,6 @@ use libp2p::{
     tcp, websocket, yamux, Multiaddr, PeerId, Swarm, Transport,
 };
 use lp2p::extract_peer_id;
-use sha2::{Digest, Sha256};
 use tokio_util::sync::CancellationToken;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
@@ -63,16 +62,16 @@ fn create_swarm(identity: &Keypair, bootnodes: Vec<Multiaddr>) -> Swarm<Behaviou
     let muxer_config = yamux::Config::default();
 
     let tcp_config = tcp::Config::new();
-    // let tcp_transport = tcp::tokio::Transport::new(tcp_config.clone());
+    let tcp_transport = tcp::tokio::Transport::new(tcp_config.clone());
 
-    let ws = websocket::WsConfig::new(tcp::tokio::Transport::new(tcp_config))
-        .upgrade(core::upgrade::Version::V1Lazy)
-        .authenticate(noise_config)
-        .multiplex(muxer_config)
-        .boxed();
+    let ws = websocket::WsConfig::new(tcp::tokio::Transport::new(tcp_config));
 
     Swarm::new(
-        ws,
+        ws.or_transport(tcp_transport)
+            .upgrade(core::upgrade::Version::V1Lazy)
+            .authenticate(noise_config)
+            .multiplex(muxer_config)
+            .boxed(),
         Behaviour::new(identity.to_owned(), bootnodes),
         local_peer_id,
         swarm::Config::with_tokio_executor().with_idle_connection_timeout(Duration::from_secs(10)),
@@ -143,6 +142,14 @@ impl State {
                         }
                         cancellation_token.cancel();
                     }
+                    QueryResult::GetClosestPeers(peers) => match peers {
+                        Ok(peers) => {
+                            tracing::info!("Received peers: {peers:?}");
+                        }
+                        Err(err) => {
+                            tracing::error!("Failed to get closest peers with error: {err}")
+                        }
+                    },
                     _ => tracing::debug!(
                         "Received unhandled outbound query progress event: {result:?}"
                     ),

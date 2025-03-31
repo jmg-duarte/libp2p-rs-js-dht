@@ -7,17 +7,17 @@ use libp2p::{
     identify,
     identity::{self, Keypair},
     kad::{self, InboundRequest, QueryResult, Record},
-    noise, ping,
+    noise,
     swarm::{self, NetworkBehaviour, SwarmEvent},
     tcp, websocket, yamux, Multiaddr, Swarm, Transport,
 };
 use lp2p::extract_peer_id;
 use tracing::level_filters::LevelFilter;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 #[derive(Clone, Debug, clap::Parser)]
 struct App {
-    #[arg(short='l', value_delimiter=',', num_args=1..)]
+    #[arg(short='l', value_delimiter=',', num_args=1.., default_value = "/ip4/0.0.0.0/tcp/64001,/ip4/0.0.0.0/tcp/64002/ws")]
     listen_addrs: Vec<Multiaddr>,
 
     #[arg(short='b', value_delimiter=',', num_args=1..)]
@@ -187,10 +187,10 @@ fn on_query_result(result: QueryResult) {
 
 fn on_inbound_request(request: InboundRequest) {
     match request {
-        request @ kad::InboundRequest::GetRecord { .. } => {
+        kad::InboundRequest::GetRecord { .. } => {
             tracing::info!("Received GetRecord request: {request:?}")
         }
-        request @ kad::InboundRequest::PutRecord { .. } => {
+        kad::InboundRequest::PutRecord { .. } => {
             tracing::info!("Received PutRecord request: {request:?}")
         }
         _ => tracing::debug!("Received unhandled InboundRequest: {request:?}"),
