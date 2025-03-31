@@ -14,6 +14,9 @@ importers:
       '@chainsafe/libp2p-yamux':
         specifier: ^7.0.1
         version: 7.0.1
+      '@libp2p/autonat':
+        specifier: ^2.0.28
+        version: 2.0.28
       '@libp2p/bootstrap':
         specifier: ^11.0.32
         version: 11.0.32
@@ -80,6 +83,9 @@ packages:
 
   '@leichtgewicht/ip-codec@2.0.5':
     resolution: {integrity: sha512-Vo+PSpZG2/fmgmiNzYK9qWRh8h/CHrwD0mo1h1DzL4yzHNSfWYujGTYsWGreD000gcgmZ7K4Ys6Tx9TxtsKdDw==}
+
+  '@libp2p/autonat@2.0.28':
+    resolution: {integrity: sha512-SFVowDdGf+C8l3XpDAqvf6eVuFcxNVuo9AS5afkklZ9RoSgc46qVGBrRFsL/27gPkuFZspx5yMYClJO8/HRleg==}
 
   '@libp2p/bootstrap@11.0.32':
     resolution: {integrity: sha512-sXpl92PyFTHhq3mA56DDyqHwFKn8JSUdco83f4ur3Jl69Zm8e4Yxli2hdzWNPtOoXy2s0DCagc/bOFuSSYu8fA==}
@@ -456,6 +462,20 @@ snapshots:
       '@chainsafe/is-ip': 2.1.0
 
   '@leichtgewicht/ip-codec@2.0.5': {}
+
+  '@libp2p/autonat@2.0.28':
+    dependencies:
+      '@libp2p/interface': 2.7.0
+      '@libp2p/interface-internal': 2.3.9
+      '@libp2p/peer-collections': 6.0.25
+      '@libp2p/peer-id': 5.1.0
+      '@libp2p/utils': 6.6.0
+      '@multiformats/multiaddr': 12.4.0
+      any-signal: 4.1.1
+      it-protobuf-stream: 1.1.6
+      multiformats: 13.3.2
+      protons-runtime: 5.5.0
+      uint8arraylist: 2.4.8
 
   '@libp2p/bootstrap@11.0.32':
     dependencies:

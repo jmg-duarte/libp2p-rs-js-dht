@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use clap::Parser;
 use libp2p::{
-    core,
+    autonat, core,
     futures::StreamExt,
     identify,
     identity::{self, Keypair},
@@ -54,6 +54,7 @@ async fn main() {
 struct Behaviour {
     identify: identify::Behaviour,
     kad: kad::Behaviour<kad::store::MemoryStore>,
+    autonat: autonat::Behaviour,
 }
 
 impl Behaviour {
@@ -73,7 +74,13 @@ impl Behaviour {
             kad.add_address(&extract_peer_id(&node).unwrap(), node);
         }
 
-        Self { identify, kad }
+        let autonat = autonat::Behaviour::new(local_peer_id, autonat::Config::default());
+
+        Self {
+            identify,
+            kad,
+            autonat,
+        }
     }
 }
 

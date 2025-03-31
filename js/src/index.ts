@@ -1,10 +1,12 @@
 import { noise } from "@chainsafe/libp2p-noise"
 import { yamux } from "@chainsafe/libp2p-yamux"
+import { autoNAT } from "@libp2p/autonat"
 import { bootstrap } from "@libp2p/bootstrap"
 import { identify, identifyPush } from "@libp2p/identify"
 import { kadDHT } from "@libp2p/kad-dht"
 import { peerIdFromString } from "@libp2p/peer-id"
 import { webSockets } from "@libp2p/websockets"
+import { multiaddr } from "@multiformats/multiaddr"
 import { createLibp2p } from "libp2p"
 
 
@@ -21,6 +23,7 @@ async function createNode(bootnodes: string[]) {
             streamMuxers: [yamux()],
             peerDiscovery: [
                 bootstrap({
+                    // Add a list of bootnodes to ensure they're around
                     list: bootnodes,
                 }),
             ],
@@ -28,8 +31,16 @@ async function createNode(bootnodes: string[]) {
                 identify: identify(),
                 identifyPush: identifyPush(),
                 dht: kadDHT({
-                    clientMode: true,
-                })
+                    // This is supposed to be an ephemeral client
+                    clientMode: false,
+                    // Required for local testing, by default, js-libp2p will remove them,
+                    // even though this isn't documented anywhere...
+                    peerInfoMapper: (peer) => peer
+                }),
+                autonat: autoNAT(),
+            },
+            connectionMonitor: {
+                enabled: false
             },
         },
     )
@@ -46,7 +57,13 @@ async function main() {
 
     const node = await createNode(bootnodes.split(","))
     const peerId = peerIdFromString(query)
-    console.log(await node.contentRouting.get(peerId.toMultihash().bytes))
+
+    for (const bootnode of bootnodes.split(",")) {
+        console.log(`Dialing ${bootnode}`)
+        const _ = await node.dial(multiaddr(bootnode))
+    }
+
+    console.log(await node.contentRouting.get(peerId.toMultihash().bytes, { signal: AbortSignal.timeout(5000) }))
 }
 
 main()

@@ -18,6 +18,7 @@
   "dependencies": {
     "@chainsafe/libp2p-noise": "^16.1.0",
     "@chainsafe/libp2p-yamux": "^7.0.1",
+    "@libp2p/autonat": "^2.0.28",
     "@libp2p/bootstrap": "^11.0.32",
     "@libp2p/identify": "^3.0.27",
     "@libp2p/interfaces": "^3.3.2",
