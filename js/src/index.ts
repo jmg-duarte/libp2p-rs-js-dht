@@ -8,6 +8,8 @@ import { peerIdFromString } from "@libp2p/peer-id"
 import { webSockets } from "@libp2p/websockets"
 import { multiaddr } from "@multiformats/multiaddr"
 import { createLibp2p } from "libp2p"
+import { perform_query, setup_logging } from "kad-query"
+import { tcp } from "@libp2p/tcp"
 
 
 async function createNode(bootnodes: string[]) {
@@ -15,10 +17,11 @@ async function createNode(bootnodes: string[]) {
         {
             addresses: {
                 listen: [
+                    "/ip4/0.0.0.0/tcp/0",
                     "/ip4/0.0.0.0/tcp/0/ws"
                 ]
             },
-            transports: [webSockets()],
+            transports: [tcp(), webSockets()],
             connectionEncrypters: [noise()],
             streamMuxers: [yamux()],
             peerDiscovery: [
@@ -47,18 +50,21 @@ async function createNode(bootnodes: string[]) {
 }
 
 async function main() {
-    const [_node, _script, bootnodes, query] = process.argv
-    if (!bootnodes) {
+    const [_node, _script, bootnodesArg, query] = process.argv
+    if (!bootnodesArg) {
         throw new Error("Missing \"bootnodes\"")
     }
     if (!query) {
         throw new Error("Missing \"query\"")
     }
+    const bootnodes = bootnodesArg.split(",")
 
-    const node = await createNode(bootnodes.split(","))
+
+
+    const node = await createNode(bootnodes)
     const peerId = peerIdFromString(query)
 
-    for (const bootnode of bootnodes.split(",")) {
+    for (const bootnode of bootnodes) {
         console.log(`Dialing ${bootnode}`)
         const _ = await node.dial(multiaddr(bootnode))
     }

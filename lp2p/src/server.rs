@@ -7,7 +7,7 @@ use libp2p::{
     identify,
     identity::{self, Keypair},
     kad::{self, InboundRequest, QueryResult, Record},
-    noise,
+    noise, ping,
     swarm::{self, NetworkBehaviour, SwarmEvent},
     tcp, websocket, yamux, Multiaddr, Swarm, Transport,
 };
@@ -52,6 +52,7 @@ async fn main() {
 
 #[derive(NetworkBehaviour)]
 struct Behaviour {
+    ping: ping::Behaviour,
     identify: identify::Behaviour,
     kad: kad::Behaviour<kad::store::MemoryStore>,
     autonat: autonat::Behaviour,
@@ -59,6 +60,8 @@ struct Behaviour {
 
 impl Behaviour {
     fn new(keypair: Keypair, bootnodes: Vec<Multiaddr>) -> Self {
+        let ping = ping::Behaviour::new(ping::Config::default());
+
         let identify = identify::Behaviour::new(identify::Config::new(
             "/polka-test/identify/1.0.0".to_string(),
             keypair.public(),
@@ -77,6 +80,7 @@ impl Behaviour {
         let autonat = autonat::Behaviour::new(local_peer_id, autonat::Config::default());
 
         Self {
+            ping,
             identify,
             kad,
             autonat,
@@ -109,7 +113,7 @@ fn create_swarm(bootnodes: Vec<Multiaddr>) -> Swarm<Behaviour> {
         tcp_ws_transport,
         Behaviour::new(identity, bootnodes),
         local_peer_id,
-        swarm::Config::with_tokio_executor().with_idle_connection_timeout(Duration::from_secs(10)),
+        swarm::Config::with_tokio_executor(),
     )
 }
 
