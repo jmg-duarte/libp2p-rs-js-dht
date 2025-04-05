@@ -17,8 +17,8 @@
                 "run",
                 "run",
                 // NOTE: don't forget the replace the PeerId with the right one when debugging
-                "/ip4/192.168.1.72/tcp/60002/ws/p2p/12D3KooWC9M6Ag1DJVXK94CfPLpuykxwUEtVNpk4jrZCKJCnBsDq",
-                "12D3KooWMsFP8dzeXEnMwH9VWSo7z8YJMAVheGJWYWEpTKDCFtwj"
+                "/ip4/127.0.0.1/tcp/50002/ws/p2p/12D3KooWAmBKJWafWP3PDrBWn4rqUrb5utXxjps27uDMUEcJNMoJ",
+                "12D3KooWALiUuDV22XSs2Tgck4UdRji4XMDSU9AExCepaXMvDJCy"
             ],
             "skipFiles": [
                 "<node_internals>/**"

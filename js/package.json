@@ -32,6 +32,7 @@
     "@multiformats/multiaddr": "^12.4.0",
     "datastore-core": "^10.0.2",
     "it-all": "^3.0.7",
+    "it-cbor-stream": "^2.0.1",
     "it-last": "^3.0.7",
     "kad-query": "link:../kad-query/pkg",
     "libp2p": "^2.8.2"

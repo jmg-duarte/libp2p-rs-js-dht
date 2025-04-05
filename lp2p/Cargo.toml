@@ -12,6 +12,10 @@ name = "query"
 path = "src/query.rs"
 
 [[bin]]
+name = "rr_query"
+path = "src/rr_query.rs"
+
+[[bin]]
 name = "server"
 path = "src/server.rs"
 
@@ -20,8 +24,10 @@ path = "src/lib.rs"
 name = "lp2p"
 
 [dependencies]
-cbor4ii = { version = "1.0.0", features = ["serde1"] }
+async-trait = "0.1.88"
+cbor4ii = { version = "1.0.0", features = ["serde1", "use_std"] }
 clap = { version = "4.5.32", features = ["derive"] }
+futures = "0.3.31"
 libp2p = { version = "0.55.0", features = [
     "cbor",
     "dns",
@@ -45,3 +51,4 @@ tokio = { version = "1.44.1", features = ["full"] }
 tokio-util = "0.7.14"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+unsigned-varint = "0.8.0"

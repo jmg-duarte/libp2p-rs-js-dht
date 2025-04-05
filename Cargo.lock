@@ -1542,6 +1542,7 @@ dependencies = [
  "console_error_panic_hook",
  "js-sys",
  "libp2p",
+ "serde",
  "time",
  "tracing",
  "tracing-subscriber",
@@ -2116,8 +2117,10 @@ dependencies = [
 name = "lp2p"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "cbor4ii 1.0.0",
  "clap",
+ "futures",
  "libp2p",
  "serde",
  "sha2",
@@ -2125,6 +2128,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
+ "unsigned-varint 0.8.0",
 ]
 
 [[package]]

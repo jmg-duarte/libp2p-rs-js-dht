@@ -25,7 +25,7 @@ struct App {
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::DEBUG))
+        .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::INFO))
         .init();
 
     let app = App::parse();
@@ -90,6 +90,7 @@ impl Behaviour {
             "/polka-test/identify/1.0.0".to_string(),
             keypair.public(),
         ));
+
         let local_peer_id = keypair.public().to_peer_id();
         let mut kad =
             kad::Behaviour::new(local_peer_id, kad::store::MemoryStore::new(local_peer_id));
@@ -98,6 +99,10 @@ impl Behaviour {
             let peer = extract_peer_id(&maddr).unwrap();
             kad.add_address(&peer, maddr);
         }
+        if kad.bootstrap().is_err() {
+            tracing::warn!("No peers were added");
+        }
+
         Self { identify, kad }
     }
 }

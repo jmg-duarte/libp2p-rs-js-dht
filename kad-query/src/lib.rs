@@ -1,6 +1,4 @@
-#![cfg(target_arch = "wasm32")]
-
-use std::str::FromStr;
+// #![cfg(target_arch = "wasm32")]
 
 use libp2p::{
     core,
@@ -9,12 +7,18 @@ use libp2p::{
     identity::{self, Keypair},
     kad::{self, GetRecordOk, GetRecordResult, QueryResult, RecordKey},
     noise, ping,
+    request_response::{self, ProtocolSupport},
     swarm::{self, NetworkBehaviour, SwarmEvent},
-    websocket_websys as websocket, yamux, Multiaddr, PeerId, Swarm, Transport,
+    websocket_websys as websocket, yamux, Multiaddr, PeerId, StreamProtocol, Swarm, Transport,
 };
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{
-    fmt::time::UtcTime, layer::SubscriberExt, util::SubscriberInitExt, Layer,
+    fmt::{format, time::UtcTime},
+    layer::SubscriberExt,
+    util::SubscriberInitExt,
+    Layer,
 };
 use wasm_bindgen::prelude::*;
 
@@ -75,7 +79,7 @@ fn inner_create_swarm(identity: &Keypair, bootnodes: Vec<Multiaddr>) -> Swarm<Be
             .authenticate(noise_config)
             .multiplex(muxer_config)
             .boxed(),
-        Behaviour::new(identity.to_owned(), bootnodes.clone()),
+        Behaviour::new(),
         local_peer_id,
         swarm::Config::with_wasm_executor(),
     );
@@ -87,42 +91,35 @@ fn inner_create_swarm(identity: &Keypair, bootnodes: Vec<Multiaddr>) -> Swarm<Be
     swarm
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Request {
+    pub peer: PeerId,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub enum Response {
+    Found {
+        peer: PeerId,
+        maddrs: Vec<Multiaddr>,
+    },
+    NotFound {
+        peer: PeerId,
+    },
+}
+
 #[derive(NetworkBehaviour)]
 struct Behaviour {
-    ping: ping::Behaviour,
-    identify: identify::Behaviour,
-    kad: kad::Behaviour<kad::store::MemoryStore>,
+    rr: request_response::cbor::Behaviour<Request, Response>,
 }
 
 impl Behaviour {
-    fn new(keypair: Keypair, bootnodes: Vec<Multiaddr>) -> Self {
-        let ping = ping::Behaviour::new(ping::Config::default());
+    fn new() -> Self {
+        let rr = request_response::cbor::Behaviour::new(
+            [(StreamProtocol::new("/rr/1.0.0"), ProtocolSupport::Full)],
+            Default::default(),
+        );
 
-        let identify = identify::Behaviour::new(identify::Config::new(
-            "/polka-test/identify/1.0.0".to_string(),
-            keypair.public(),
-        ));
-
-        let local_peer_id = keypair.public().to_peer_id();
-        let mut kad =
-            kad::Behaviour::new(local_peer_id, kad::store::MemoryStore::new(local_peer_id));
-        kad.set_mode(Some(kad::Mode::Client));
-        for maddr in bootnodes {
-            tracing::debug!("Adding multiaddress: {:?}", maddr);
-
-            let peer = match maddr.iter().last() {
-                Some(core::multiaddr::Protocol::P2p(peer_id)) => Some(peer_id),
-                _ => None,
-            }
-            .expect("multiaddress should contain a /p2p segment");
-
-            kad.add_address(&peer, maddr);
-        }
-        Self {
-            ping,
-            identify,
-            kad,
-        }
+        Self { rr }
     }
 }
 
@@ -132,15 +129,9 @@ struct State {
 
 impl State {
     async fn event_loop(&mut self, query: PeerId) -> Result<Vec<Multiaddr>, String> {
-        let key = RecordKey::new(&query.to_bytes());
-        // Once again, since this is supposed to be ephemeral, we're not storing the query id
-        // as it isn't the case (at the time of writing) that multiple in-flight queries should happen
-        let query_id = self.swarm.behaviour_mut().kad.get_record(key);
-        tracing::debug!("Sent GetRecord request: {query_id:?}");
-
         loop {
             let event = self.swarm.select_next_some().await;
-            match self.on_swarm_event(event) {
+            match self.on_swarm_event(event, query) {
                 Some(result) => return result,
                 None => continue,
             }
@@ -150,9 +141,19 @@ impl State {
     fn on_swarm_event(
         &mut self,
         event: SwarmEvent<BehaviourEvent>,
+        query: PeerId,
     ) -> Option<Result<Vec<Multiaddr>, String>> {
         match event {
             SwarmEvent::Behaviour(event) => self.on_behaviour_event(event),
+            SwarmEvent::ConnectionEstablished { peer_id, .. } => {
+                self.swarm
+                    .behaviour_mut()
+                    .rr
+                    .send_request(&peer_id, Request { peer: query });
+
+                tracing::debug!("Sent request");
+                None
+            }
             _ => {
                 tracing::debug!("Received unhandled event: {event:?}");
                 None
@@ -165,51 +166,43 @@ impl State {
         event: BehaviourEvent,
     ) -> Option<Result<Vec<Multiaddr>, String>> {
         match event {
-            BehaviourEvent::Kad(event) => match event {
-                kad::Event::OutboundQueryProgressed { result, .. } => match result {
-                    QueryResult::GetRecord(get_record_ok) => self.on_get_record(get_record_ok),
-                    _ => {
-                        tracing::debug!(
-                            "Received unhandled outbound query progress event: {result:?}"
-                        );
+            BehaviourEvent::Rr(event) => match event {
+                request_response::Event::Message {
+                    peer,
+                    connection_id,
+                    message,
+                } => match message {
+                    request_response::Message::Response {
+                        request_id,
+                        response,
+                    } => match response {
+                        Response::Found { peer, maddrs } => {
+                            tracing::info!("Found! {peer} {maddrs:?}");
+                            return Some(Ok(maddrs));
+                        }
+                        Response::NotFound { peer } => {
+                            tracing::error!("Not found: {response:?}");
+                            return Some(Err("Not found".to_string()));
+                        }
+                    },
+                    message => {
+                        tracing::debug!("Received unhandled request: {message:?}");
                         None
                     }
                 },
+                request_response::Event::OutboundFailure { .. }
+                | request_response::Event::InboundFailure { .. } => {
+                    tracing::error!("Received failure event: {event:?}");
+                    Some(Err(format!("{:?}", event)))
+                }
                 _ => {
-                    tracing::debug!("Received unhandled kademlia event: {event:?}");
+                    tracing::debug!("Received unhandled RR event: {event:?}");
                     None
                 }
             },
             _ => {
                 tracing::debug!("Received unhandled behaviour event: {event:?}");
                 None
-            }
-        }
-    }
-
-    fn on_get_record(
-        &mut self,
-        get_record: GetRecordResult,
-    ) -> Option<Result<Vec<Multiaddr>, String>> {
-        match get_record {
-            Ok(ok) => match ok {
-                GetRecordOk::FoundRecord(record) => {
-                    let peer_id = PeerId::from_bytes(&record.record.key.to_vec()).unwrap();
-                    let maddrs: Vec<Multiaddr> =
-                        cbor4ii::serde::from_slice(&record.record.value).unwrap();
-                    tracing::info!(
-                        "GetRecord returned the following record: {peer_id}::{maddrs:?}"
-                    );
-                    return Some(Ok(maddrs));
-                }
-                GetRecordOk::FinishedWithNoAdditionalRecord { .. } => {
-                    tracing::debug!("Received unhandled {ok:?}");
-                    return Some(Ok(vec![]));
-                }
-            },
-            Err(err) => {
-                tracing::error!("GetRecord failed with error: {err}");
-                return Some(Err(err.to_string()));
             }
         }
     }
